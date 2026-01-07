@@ -45,7 +45,7 @@ def fetch_user_by_id(user_id: int) -> Optional[Dict[str, Any]]:
     return row_to_dict(row) if row else None
 
 
-@app.route("/users", methods=["GET"])
+@app.route("/api/v1/users", methods=["GET"])
 def list_users():
     with get_connection() as connection:
         rows = connection.execute(
@@ -54,7 +54,7 @@ def list_users():
     return jsonify([row_to_dict(row) for row in rows]), 200
 
 
-@app.route("/users", methods=["POST"])
+@app.route("/api/v1/users", methods=["POST"])
 def create_user():
     payload = request.get_json(silent=True) or {}
     username = payload.get("username")
@@ -82,7 +82,7 @@ def create_user():
     return jsonify(fetch_user_by_id(user_id)), 201
 
 
-@app.route("/users/<int:user_id>", methods=["GET"])
+@app.route("/api/v1/users/<int:user_id>", methods=["GET"])
 def get_user(user_id: int):
     user = fetch_user_by_id(user_id)
     if not user:
@@ -90,7 +90,7 @@ def get_user(user_id: int):
     return jsonify(user), 200
 
 
-@app.route("/users/<int:user_id>", methods=["PUT"])
+@app.route("/api/v1/users/<int:user_id>", methods=["PUT"])
 def update_user(user_id: int):
     payload = request.get_json(silent=True) or {}
     username = payload.get("username")
@@ -129,7 +129,7 @@ def update_user(user_id: int):
     return jsonify(fetch_user_by_id(user_id)), 200
 
 
-@app.route("/users/<int:user_id>", methods=["DELETE"])
+@app.route("/api/v1/users/<int:user_id>", methods=["DELETE"])
 def delete_user(user_id: int):
     with get_connection() as connection:
         cursor = connection.execute("DELETE FROM users WHERE id = ?", (user_id,))
@@ -138,7 +138,7 @@ def delete_user(user_id: int):
     return "", 204
 
 
-@app.route("/users/login", methods=["POST"])
+@app.route("/api/v1/users/login", methods=["POST"])
 def login_user():
     payload = request.get_json(silent=True) or {}
     username = payload.get("username")
@@ -174,7 +174,7 @@ def fetch_log_by_id(log_id: int) -> Optional[Dict[str, Any]]:
     return row_to_dict(row) if row else None
 
 
-@app.route("/logs", methods=["GET"])
+@app.route("/api/v1/logs", methods=["GET"])
 @require_api_key
 def list_logs():
     with get_connection() as connection:
@@ -188,7 +188,7 @@ def list_logs():
     return jsonify([row_to_dict(row) for row in rows]), 200
 
 
-@app.route("/logs", methods=["POST"])
+@app.route("/api/v1/logs", methods=["POST"])
 @require_api_key
 def create_log():
     payload = request.get_json(silent=True) or {}
@@ -215,7 +215,7 @@ def create_log():
     return jsonify(fetch_log_by_id(log_id)), 201
 
 
-@app.route("/logs/<int:log_id>", methods=["GET"])
+@app.route("/api/v1/logs/<int:log_id>", methods=["GET"])
 @require_api_key
 def get_log(log_id: int):
     log = fetch_log_by_id(log_id)
@@ -224,7 +224,7 @@ def get_log(log_id: int):
     return jsonify(log), 200
 
 
-@app.route("/logs/<int:log_id>", methods=["PUT"])
+@app.route("/api/v1/logs/<int:log_id>", methods=["PUT"])
 @require_api_key
 def update_log(log_id: int):
     payload = request.get_json(silent=True) or {}
@@ -269,7 +269,7 @@ def update_log(log_id: int):
     return jsonify(fetch_log_by_id(log_id)), 200
 
 
-@app.route("/logs/<int:log_id>", methods=["DELETE"])
+@app.route("/api/v1/logs/<int:log_id>", methods=["DELETE"])
 @require_api_key
 def delete_log(log_id: int):
     with get_connection() as connection:
