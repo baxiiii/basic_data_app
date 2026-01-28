@@ -57,3 +57,6 @@ VALUES ('jay', 'demo_hash_123', 'admin');
 
 INSERT INTO maintenance_logs (title, description, priority, status, user_id)
 VALUES ('Leaking pipe', 'Pipe leaking under sink in Bay 2', 'high', 'open', last_insert_rowid());
+
+INSERT INTO inspection_items (maintenance_log_id, item_number, description, result, notes)
+VALUES (1, 'A320-HYD-001', 'Check hydraulic fluid level', 'pass', 'Fluid level normal');
