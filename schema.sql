@@ -20,7 +20,6 @@ CREATE TABLE IF NOT EXISTS maintenance_logs (
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
-
 CREATE TABLE IF NOT EXISTS inspection_items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     maintenance_log_id INTEGER NOT NULL,
@@ -33,7 +32,6 @@ CREATE TABLE IF NOT EXISTS inspection_items (
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (maintenance_log_id) REFERENCES maintenance_logs(id) ON DELETE CASCADE
 );
-
 CREATE TABLE IF NOT EXISTS maintenance_log_media (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     maintenance_log_id INTEGER NOT NULL,
@@ -49,14 +47,6 @@ CREATE TABLE IF NOT EXISTS maintenance_log_media (
         OR (file_path IS NULL AND media_blob IS NOT NULL)
     )
 );
-
-
-INSERT INTO users (username, password_hash, role)
-VALUES ('jay', 'demo_hash_123', 'admin');
-
-
-INSERT INTO maintenance_logs (title, description, priority, status, user_id)
-VALUES ('Leaking pipe', 'Pipe leaking under sink in Bay 2', 'high', 'open', last_insert_rowid());
 
 INSERT INTO inspection_items (maintenance_log_id, item_number, description, result, notes)
 VALUES (1, 'A320-HYD-001', 'Check hydraulic fluid level', 'pass', 'Fluid level normal');

@@ -144,6 +144,99 @@ def delete_user(user_id: int):
             return jsonify({"error": "user not found"}), 404
     return "", 204
 
+@app.route("/sync/jobs", methods=["POST"])
+@require_api_key
+def sync_jobs():
+    """Batch synchronization endpoint as per assignment brief"""
+    payload = request.get_json(silent=True) or {}
+    jobs = payload.get("jobs", [])
+    
+    if not jobs:
+        return jsonify({"error": "jobs array is required"}), 400
+    
+    synced_logs = []
+    synced_items = []
+    errors = []
+    
+    with get_connection() as connection:
+        for job_data in jobs:
+            try:
+                # Sync main log
+                log_id = job_data.get("id")  # Server ID if updating
+                title = job_data.get("title")
+                description = job_data.get("description")
+                priority = job_data.get("priority")
+                status = job_data.get("status")
+                user_id = job_data.get("user_id")
+                
+                if log_id:
+                    # UPDATE existing log
+                    cursor = connection.execute(
+                        """
+                        UPDATE maintenance_logs 
+                        SET title = ?, description = ?, priority = ?, 
+                            status = ?, user_id = ?, updated_at = CURRENT_TIMESTAMP
+                        WHERE id = ?
+                        """,
+                        (title, description, priority, status, user_id, log_id)
+                    )
+                    if cursor.rowcount > 0:
+                        synced_logs.append(log_id)
+                else:
+                    # CREATE new log
+                    cursor = connection.execute(
+                        """
+                        INSERT INTO maintenance_logs
+                            (title, description, priority, status, user_id, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                        """,
+                        (title, description, priority, status, user_id)
+                    )
+                    log_id = cursor.lastrowid
+                    synced_logs.append(log_id)
+                
+                # Sync inspection items if provided
+                inspection_items = job_data.get("inspection_items", [])
+                for item in inspection_items:
+                    item_id = item.get("id")
+                    item_number = item.get("item_number")
+                    item_desc = item.get("description")
+                    result = item.get("result")
+                    notes = item.get("notes")
+                    completed_at = item.get("completed_at")
+                    
+                    if item_id:
+                        # Update existing item
+                        cursor = connection.execute(
+                            """
+                            UPDATE inspection_items
+                            SET item_number = ?, description = ?, result = ?,
+                                notes = ?, completed_at = ?, updated_at = CURRENT_TIMESTAMP
+                            WHERE id = ?
+                            """,
+                            (item_number, item_desc, result, notes, completed_at, item_id)
+                        )
+                    else:
+                        # Create new item
+                        cursor = connection.execute(
+                            """
+                            INSERT INTO inspection_items
+                                (maintenance_log_id, item_number, description, result, notes, completed_at)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                            """,
+                            (log_id, item_number, item_desc, result, notes, completed_at)
+                        )
+                        synced_items.append(cursor.lastrowid)
+                        
+            except Exception as e:
+                errors.append({"job": job_data, "error": str(e)})
+    
+    return jsonify({
+        "synced_logs": len(synced_logs),
+        "synced_items": len(synced_items),
+        "log_ids": synced_logs,
+        "errors": errors
+    }), 200
 
 @app.route("/api/v1/users/login", methods=["POST"])
 def login_user():
