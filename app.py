@@ -4,12 +4,24 @@ from typing import Any, Dict, Optional
 
 from flask import Flask, jsonify, request
 from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.utils import secure_filename
+import os
+import time
+
+
+
+UPLOAD_FOLDER = 'uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov'}
+
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 API_KEY = "api_warehouse_student_key_1234567890abcdef"
 DB_PATH = "warehouse.db"
 
 app = Flask(__name__)
 
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def get_connection() -> sqlite3.Connection:
     connection = sqlite3.connect(DB_PATH)
@@ -380,6 +392,67 @@ def delete_log(log_id: int):
             return jsonify({"error": "log not found"}), 404
     return "", 204
 
+from werkzeug.utils import secure_filename
+import os
+
+UPLOAD_FOLDER = 'uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov'}
+
+# Create uploads folder if doesn't exist
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route("/api/v1/logs/<int:log_id>/media", methods=["POST"])
+@require_api_key
+def upload_media(log_id: int):
+    """Upload file attachment for a maintenance log"""
+    # Check if log exists
+    log = fetch_log_by_id(log_id)
+    if not log:
+        return jsonify({"error": "log not found"}), 404
+    
+    # Check if file in request
+    if 'file' not in request.files:
+        return jsonify({"error": "no file provided"}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "empty filename"}), 400
+    
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        # Add timestamp to avoid collisions
+        timestamp = int(time.time())
+        filename = f"{timestamp}_{filename}"
+        filepath = os.path.join(UPLOAD_FOLDER, filename)
+        file.save(filepath)
+        
+        # Determine media type
+        ext = filename.rsplit('.', 1)[1].lower()
+        media_type = 'video' if ext in ['mp4', 'mov'] else 'image'
+        
+        # Save to database
+        with get_connection() as connection:
+            cursor = connection.execute(
+                """
+                INSERT INTO maintenance_log_media
+                    (maintenance_log_id, media_type, file_name, file_path)
+                VALUES (?, ?, ?, ?)
+                """,
+                (log_id, media_type, filename, filepath)
+            )
+            media_id = cursor.lastrowid
+        
+        return jsonify({
+            "id": media_id,
+            "file_name": filename,
+            "file_path": filepath,
+            "media_type": media_type
+        }), 201
+    
+    return jsonify({"error": "invalid file type"}), 400
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
