@@ -20,6 +20,20 @@ CREATE TABLE IF NOT EXISTS maintenance_logs (
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
+
+CREATE TABLE IF NOT EXISTS inspection_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    maintenance_log_id INTEGER NOT NULL,
+    item_number TEXT NOT NULL,
+    description TEXT NOT NULL,
+    result TEXT NOT NULL CHECK (result IN ('pass', 'fail', 'na')),
+    notes TEXT,
+    completed_at TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (maintenance_log_id) REFERENCES maintenance_logs(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS maintenance_log_media (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     maintenance_log_id INTEGER NOT NULL,
